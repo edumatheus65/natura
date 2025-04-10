@@ -1,0 +1,30 @@
+# Diretórios temporários ou de upload
+uploads/
+postgres-data/
+
+# Dependências
+node_modules/
+
+# Arquivos de configuração local
+eslint.config.mjs
+package-lock.json
+
+# Arquivos de banco de dados (se aplicável)
+*.db
+*.sqlite
+
+# Arquivos do Docker (se houver)
+docker-compose.yml
+
+# Arquivos de configuração do editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Arquivos temporários do sistema
+*.swp
+*.bak
+*.tmp
+
