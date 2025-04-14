@@ -2,8 +2,11 @@ import pkg from "pg";
 const { Client } = pkg;
 import XLSX from "xlsx";
 import path from "path";
+import { fileURLToPath } from "url";
 
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const filePath = path.join(__dirname, "..", "uploads", "ACTIVITY.xls");
 
 const readXlsFile = (filePath) => {
@@ -15,7 +18,7 @@ const readXlsFile = (filePath) => {
   return data;
 };
 
-const insertDataToPostgres = async (data) => {
+const insertDataToPostgres = async (headers, rows) => {
   const client = new Client({
     user: "postgres",
     host: "localhost",
@@ -39,16 +42,49 @@ const insertDataToPostgres = async (data) => {
     ) ON CONFLICT (id) DO NOTHING; -- Impede a inserção de registros duplicados com o mesmo TASK_ID
   `;
 
-  for (const row of data.slice(1)) {
-    const values = row.map((value) => (value === undefined ? null : value));
-
-    const excelSerial = values[17];
-
-    if (typeof excelSerial === "number") {
-      values[17] = excelSerial.toString();
-    } else {
-      values[17] = null;
+  for (const row of rows) {
+    if (
+      !Array.isArray(row) ||
+      row.length === 0 ||
+      row.every((cell) => cell === undefined)
+    ) {
+      console.log("⚠️ Linha inválida ou vazia pulada:", row);
+      continue; // pula linha que não é array ou está vazia
     }
+
+    const rowObject = {};
+
+    headers.forEach((header, index) => {
+      rowObject[header] = row[index] !== undefined ? row[index] : null;
+    });
+
+    if (typeof rowObject["CUSTCOL_20"] === "number") {
+      rowObject["CUSTCOL_20"] = rowObject["CUSTCOL_20"].toString();
+    }
+
+    const values = [
+      rowObject["TASK_ID"],
+      rowObject["TRAN_TYPE"],
+      rowObject["TRAN_CODE"],
+      rowObject["CODE_DESC"],
+      rowObject["TRANS_TYPE_DESC"],
+      rowObject["PLT_ID"],
+      rowObject["CNTR_NBR"],
+      rowObject["FROM_L"],
+      rowObject["LOCN_BRCD"],
+      rowObject["TO_L"],
+      rowObject["LOCN_BRCD0"],
+      rowObject["SKU_ID"],
+      rowObject["DSP_SKU"],
+      rowObject["SKU_DESC0"],
+      rowObject["CODE_ID"],
+      rowObject["CODE_DESC0"],
+      rowObject["CUSTCOL_20"],
+      rowObject["USER_ID"],
+      rowObject["USER_NAME"],
+      rowObject["WJXBFS1"],
+      rowObject["WJXBFS2"],
+    ];
 
     await client.query(query, values);
   }
@@ -58,9 +94,11 @@ const insertDataToPostgres = async (data) => {
 
 // Leitura do arquivo
 const data = readXlsFile(filePath);
+const headers = data[0];
+const rows = data.slice(1);
 
 // Insira os dados no PostgreSQL
-insertDataToPostgres(data)
+insertDataToPostgres(headers, rows)
   .then(() => {
     console.log("✅ Dados inseridos com sucesso!");
   })
