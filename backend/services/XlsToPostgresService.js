@@ -3,6 +3,7 @@ const { Client } = pkg;
 import XLSX from "xlsx";
 import path from "path";
 import { fileURLToPath } from "url";
+import { excelDateToJSDate } from "./utils/excelDateToJSDate.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,7 +60,8 @@ const insertDataToPostgres = async (headers, rows) => {
     });
 
     if (typeof rowObject["CUSTCOL_20"] === "number") {
-      rowObject["CUSTCOL_20"] = rowObject["CUSTCOL_20"].toString();
+      const dataConvertida = excelDateToJSDate(rowObject["CUSTCOL_20"]);
+      rowObject["CUSTCOL_20"] = dataConvertida.toISOString();
     }
 
     const values = [
